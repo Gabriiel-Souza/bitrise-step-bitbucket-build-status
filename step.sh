@@ -1,22 +1,37 @@
-#!/bin/bash
-set -ex
+#!/usr/bin/env bash
 
-echo "This is the value specified for the input 'example_step_input': ${example_step_input}"
+REPO_SLUG="$BITRISE_APP_TITLE"
+BUILD_URL="$BITRISE_BUILD_URL"
+BASE_REPOSITORY_URL="https://api.bitbucket.org/2.0/repositories/m2y/$REPO_SLUG"
+COMMIT_HASH=$(git log -1 --format=%H)
 
-#
-# --- Export Environment Variables for other Steps:
-# You can export Environment Variables for other Steps with
-#  envman, which is automatically installed by `bitrise setup`.
-# A very simple example:
-envman add --key EXAMPLE_STEP_OUTPUT --value 'the value you want to share'
-# Envman can handle piped inputs, which is useful if the text you want to
-# share is complex and you don't want to deal with proper bash escaping:
-#  cat file_with_complex_input | envman add --KEY EXAMPLE_STEP_OUTPUT
-# You can find more usage examples on envman's GitHub page
-#  at: https://github.com/bitrise-io/envman
+if [ "$preset_status" != "AUTO" ]; then
+    BUILD_STATUS=$preset_status
+else
+    if [ "$BITRISE_BUILD_STATUS" == "0" ]; then
+        BUILD_STATUS="SUCCESSFUL"
+    else
+        BUILD_STATUS="FAILED"
+    fi
+fi
 
-#
-# --- Exit codes:
-# The exit code of your Step is very important. If you return
-#  with a 0 exit code `bitrise` will register your Step as "successful".
-# Any non zero exit code will be registered as "failed" by `bitrise`.
+CURL_BITRISE_URL="$BASE_REPOSITORY_URL/commit/$COMMIT_HASH/statuses/build"
+
+echo "Build Status: $BUILD_STATUS"
+echo "Updating build status for commit: $COMMIT_HASH"
+echo "API Endpoint: $CURL_BITRISE_URL"
+
+curl $CURL_BITRISE_URL \
+    -X POST \
+    -i \
+    -u $username:$password \
+    -H 'Content-Type: application/json' \
+    --data-binary \
+        $"{
+            \"state\": \"$BUILD_STATUS\",
+            \"key\": \"Bitrise - #$BITRISE_BUILD_NUMBER\",
+            \"name\": \"Bitrise #$BITRISE_BUILD_NUMBER\",
+            \"url\": \"$BUILD_URL\",
+            \"description\": \"Build status updated from Bitrise\"
+        }" \
+    --compressed
