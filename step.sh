@@ -5,8 +5,8 @@ BUILD_URL="$BITRISE_BUILD_URL"
 BASE_REPOSITORY_URL="https://api.bitbucket.org/2.0/repositories/m2y/$REPO_SLUG"
 COMMIT_HASH=$(git log -1 --format=%H)
 
-if [ "$preset_status" != "AUTO" ]; then
-    BUILD_STATUS=$preset_status
+if [ "$build_status" != "AUTO" ]; then
+    BUILD_STATUS=$build_status
 else
     if [ "$BITRISE_BUILD_STATUS" == "0" ]; then
         BUILD_STATUS="SUCCESSFUL"
@@ -17,6 +17,7 @@ fi
 
 CURL_BITRISE_URL="$BASE_REPOSITORY_URL/commit/$COMMIT_HASH/statuses/build"
 
+echo "Preset status: $build_status"
 echo "Build Status: $BUILD_STATUS"
 echo "Updating build status for commit: $COMMIT_HASH"
 echo "API Endpoint: $CURL_BITRISE_URL"
